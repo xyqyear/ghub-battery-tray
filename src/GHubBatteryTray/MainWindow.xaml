@@ -1,0 +1,186 @@
+<Window x:Class="GHubBatteryTray.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="G HUB Battery Tray"
+        Width="640"
+        Height="620"
+        MinWidth="560"
+        MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+        Foreground="{DynamicResource {x:Static SystemColors.WindowTextBrushKey}}">
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock FontSize="26" FontWeight="SemiBold" Text="G HUB Battery Tray" />
+                <TextBlock Margin="0,5,0,0"
+                           Opacity="0.7"
+                           Text="Live battery levels from Logitech G HUB" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    MinWidth="96"
+                    Padding="14,7"
+                    Command="{Binding RefreshCommand}"
+                    Content="Refresh" />
+        </Grid>
+
+        <Border Grid.Row="1" Margin="0,20,0,0" Style="{StaticResource CardStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Ellipse Width="10" Height="10" Margin="0,0,12,0">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="#FFB74D" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ConnectionState}" Value="Connected">
+                                    <Setter Property="Fill" Value="#4CC978" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding ConnectionState}" Value="Disconnected">
+                                    <Setter Property="Fill" Value="#EF5350" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+                <TextBlock Grid.Column="1"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Text="{Binding ConnectionText}" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="2" Margin="0,24,0,10">
+            <TextBlock FontSize="16" FontWeight="SemiBold" Text="Devices" />
+            <TextBlock HorizontalAlignment="Right"
+                       Opacity="0.65"
+                       Text="Select one or more tray icons" />
+        </Grid>
+
+        <Grid Grid.Row="3">
+            <ListBox ItemsSource="{Binding Devices}"
+                     BorderThickness="0"
+                     Background="Transparent"
+                     HorizontalContentAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0,0,0,8" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource CardStyle}" Padding="14">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="90" />
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Margin="0,0,14,0"
+                                          VerticalAlignment="Center"
+                                          IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
+                                    <TextBlock Margin="0,4,0,0"
+                                               FontSize="12"
+                                               Opacity="0.65"
+                                               Text="{Binding DetailText}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock HorizontalAlignment="Right"
+                                               FontSize="18"
+                                               FontWeight="SemiBold"
+                                               Text="{Binding BatteryText}" />
+                                    <ProgressBar Height="6"
+                                                 Margin="0,7,0,0"
+                                                 Minimum="0"
+                                                 Maximum="100"
+                                                 Value="{Binding BatteryPercentage}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBlock HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Opacity="0.65"
+                       Text="No battery-capable G HUB devices have been found.">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsEmpty}" Value="True">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
+        <Border Grid.Row="4" Margin="0,16,0,0" Style="{StaticResource CardStyle}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock FontWeight="SemiBold" Text="Start with Windows" />
+                    <TextBlock Margin="0,4,0,0"
+                               FontSize="12"
+                               Opacity="0.65"
+                               Text="Launch silently and restore your selected device icons." />
+                </StackPanel>
+                <CheckBox Grid.Column="1"
+                          Margin="16,0,0,0"
+                          VerticalAlignment="Center"
+                          IsChecked="{Binding StartWithWindows, Mode=TwoWay}" />
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="5" Margin="0,14,0,0">
+            <TextBlock VerticalAlignment="Center"
+                       FontSize="12"
+                       Opacity="0.6"
+                       Text="Closing this window keeps the tray icons running." />
+            <TextBlock HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Foreground="#EF5350"
+                       Text="{Binding ErrorMessage}">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Visible" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ErrorMessage}" Value="">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+    </Grid>
+</Window>
