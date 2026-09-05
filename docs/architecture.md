@@ -40,3 +40,5 @@ Runtime dependencies are limited to Microsoft-maintained packages:
 - `Microsoft.Extensions.Hosting`
 
 The tray implementation, WebSocket transport, JSON parser, drawing code, registry integration, and single-instance coordination use APIs from the .NET Windows Desktop runtime.
+
+Release packaging uses a hash-pinned portable NSIS compiler. Each Windows architecture is published as both a self-contained portable executable and a per-user installer that writes only to the current user's profile.

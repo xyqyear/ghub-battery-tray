@@ -11,7 +11,7 @@ A small Windows tray app that shows battery levels reported by Logitech G HUB.
 
 ## Install
 
-Download the `win-x64`, `win-x86`, or `win-arm64` executable from [Releases](../../releases/latest). G HUB must be running. Release builds are self-contained and require no separate .NET installation.
+Download the `win-x64`, `win-x86`, or `win-arm64` build from [Releases](../../releases/latest). Use the `setup.exe` installer or the standalone `portable.exe`. Both are self-contained; G HUB must be running, but no separate .NET installation is required.
 
 ## Build
 
@@ -22,5 +22,7 @@ dotnet restore GHubBatteryTray.slnx
 dotnet test GHubBatteryTray.slnx --configuration Release --no-restore
 dotnet run --project src/GHubBatteryTray/GHubBatteryTray.csproj
 ```
+
+Installers are built from `installer/GHubBatteryTray.nsi` with NSIS.
 
 The G HUB battery protocol is undocumented and may change. See [protocol notes](docs/ghub-protocol.md) and [architecture](docs/architecture.md).

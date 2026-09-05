@@ -16,6 +16,8 @@ permissions:
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: 1
   DOTNET_NOLOGO: true
+  NSIS_VERSION: 3.12
+  NSIS_SHA256: 56581f90db321581c5381193d796fffcf2d24b2f8fed2160a6c6a3baa67f2c4f
 
 jobs:
   test:
@@ -35,22 +37,53 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rid:
-          - win-x64
-          - win-x86
-          - win-arm64
+        include:
+          - rid: win-x64
+            target-arch: x64
+          - rid: win-x86
+            target-arch: x86
+          - rid: win-arm64
+            target-arch: arm64
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
+      - name: Download NSIS compiler
+        shell: pwsh
+        run: |
+          $archivePath = Join-Path $env:RUNNER_TEMP "nsis-$env:NSIS_VERSION.zip"
+          $compilerDirectory = Join-Path $env:RUNNER_TEMP "nsis-$env:NSIS_VERSION"
+          $downloadUrl = "https://sourceforge.net/projects/nsis/files/NSIS%203/$env:NSIS_VERSION/nsis-$env:NSIS_VERSION.zip/download"
+          curl.exe -L --fail --retry 3 --output $archivePath $downloadUrl
+          if ($LASTEXITCODE -ne 0) {
+            throw "NSIS compiler download failed with exit code $LASTEXITCODE."
+          }
+          $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $env:NSIS_SHA256) {
+            throw "NSIS compiler hash validation failed."
+          }
+          Expand-Archive -LiteralPath $archivePath -DestinationPath $compilerDirectory
+          $compilerPath = (Get-ChildItem -LiteralPath $compilerDirectory -Filter makensis.exe -Recurse | Select-Object -First 1).FullName
+          if (-not $compilerPath) {
+            throw "NSIS compiler was not found in the verified archive."
+          }
+          Add-Content -Path $env:GITHUB_ENV -Value "MAKENSIS_PATH=$compilerPath"
       - name: Publish ${{ matrix.rid }}
         env:
           RELEASE_TAG: ${{ github.ref_name }}
           RID: ${{ matrix.rid }}
+          TARGET_ARCH: ${{ matrix.target-arch }}
         shell: pwsh
         run: |
           $version = $env:RELEASE_TAG -replace '^v', ''
+          if ($version -notmatch '^(?<CoreVersion>\d+\.\d+\.\d+)') {
+            throw "Release tags must begin with a semantic version, such as v1.2.3."
+          }
+          $numericVersion = "$($Matches.CoreVersion).0"
+          $publishDirectory = [System.IO.Path]::GetFullPath("artifacts/package/$env:RID")
+          $releaseDirectory = [System.IO.Path]::GetFullPath("artifacts/release/$env:RID")
+          New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
           dotnet publish src/GHubBatteryTray/GHubBatteryTray.csproj `
             --configuration Release `
             --runtime $env:RID `
@@ -61,14 +94,26 @@ jobs:
             -p:PublishTrimmed=false `
             -p:DebugSymbols=false `
             -p:DebugType=None `
-            --output "artifacts/$env:RID"
-          Rename-Item `
-            -LiteralPath "artifacts/$env:RID/GHubBatteryTray.exe" `
-            -NewName "GHubBatteryTray-$env:RELEASE_TAG-$env:RID.exe"
+            --output $publishDirectory
+          Copy-Item `
+            -LiteralPath "$publishDirectory/GHubBatteryTray.exe" `
+            -Destination "$releaseDirectory/GHubBatteryTray-$env:RELEASE_TAG-$env:RID-portable.exe"
+          $installerPath = "$releaseDirectory/GHubBatteryTray-$env:RELEASE_TAG-$env:RID-setup.exe"
+          & $env:MAKENSIS_PATH `
+            /WX `
+            "/DAPP_VERSION=$version" `
+            "/DNUMERIC_VERSION=$numericVersion" `
+            "/DSOURCE_EXE=$publishDirectory/GHubBatteryTray.exe" `
+            "/DTARGET_ARCH=$env:TARGET_ARCH" `
+            "/DOUTPUT_FILE=$installerPath" `
+            installer/GHubBatteryTray.nsi
+          if ($LASTEXITCODE -ne 0) {
+            throw "Installer compilation failed with exit code $LASTEXITCODE."
+          }
       - uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.rid }}
-          path: artifacts/${{ matrix.rid }}/*.exe
+          path: artifacts/release/${{ matrix.rid }}/*
           if-no-files-found: error
           retention-days: 7
 
