@@ -83,6 +83,7 @@ jobs:
           $numericVersion = "$($Matches.CoreVersion).0"
           $publishDirectory = [System.IO.Path]::GetFullPath("artifacts/package/$env:RID")
           $releaseDirectory = [System.IO.Path]::GetFullPath("artifacts/release/$env:RID")
+          $publishedExe = Join-Path $publishDirectory "GHubBatteryTray.exe"
           New-Item -ItemType Directory -Force -Path $releaseDirectory | Out-Null
           dotnet publish src/GHubBatteryTray/GHubBatteryTray.csproj `
             --configuration Release `
@@ -96,14 +97,14 @@ jobs:
             -p:DebugType=None `
             --output $publishDirectory
           Copy-Item `
-            -LiteralPath "$publishDirectory/GHubBatteryTray.exe" `
+            -LiteralPath $publishedExe `
             -Destination "$releaseDirectory/GHubBatteryTray-$env:RELEASE_TAG-$env:RID-portable.exe"
-          $installerPath = "$releaseDirectory/GHubBatteryTray-$env:RELEASE_TAG-$env:RID-setup.exe"
+          $installerPath = Join-Path $releaseDirectory "GHubBatteryTray-$env:RELEASE_TAG-$env:RID-setup.exe"
           & $env:MAKENSIS_PATH `
             /WX `
             "/DAPP_VERSION=$version" `
             "/DNUMERIC_VERSION=$numericVersion" `
-            "/DSOURCE_EXE=$publishDirectory/GHubBatteryTray.exe" `
+            "/DSOURCE_EXE=$publishedExe" `
             "/DTARGET_ARCH=$env:TARGET_ARCH" `
             "/DOUTPUT_FILE=$installerPath" `
             installer/GHubBatteryTray.nsi
